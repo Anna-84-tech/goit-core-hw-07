@@ -33,8 +33,9 @@ class Phone(Field):
 class Birthday(Field):
     def __init__(self, value):
         try:
-            # Validate date format and convert string to datetime object
-            self.value = datetime.strptime(value, "%d.%m.%Y").date()
+            # Validate date format and keep value as DD.MM.YYYY string
+            datetime.strptime(value, "%d.%m.%Y")
+            super().__init__(value)
         except ValueError:
             raise ValueError("Invalid date format. Use DD.MM.YYYY")
 
@@ -103,7 +104,7 @@ class AddressBook(UserDict):
             if record.birthday is None:
                 continue
 
-            birthday_date = record.birthday.value
+            birthday_date = datetime.strptime(record.birthday.value, "%d.%m.%Y").date()
             birthday_this_year = birthday_date.replace(year=today.year)
 
             # If birthday has already passed this year, look at next year
@@ -138,6 +139,8 @@ def input_error(func):
             return "Enter user name and required arguments."
         except KeyError:
             return "Contact not found."
+        except AttributeError:
+            return "Contact not found."
     return inner
 
 
@@ -167,22 +170,18 @@ def add_contact(args, book: AddressBook):
 def change_contact(args, book: AddressBook):
     name, old_phone, new_phone, *_ = args
     record = book.find(name)
-    if record:
-        record.edit_phone(old_phone, new_phone)
-        return "Phone number updated."
-    else:
-        raise KeyError
+    record.edit_phone(old_phone, new_phone)
+    return "Phone number updated."
 
 
 @input_error
 def show_phones(args, book: AddressBook):
     name, *_ = args
     record = book.find(name)
-    if record:
-        if record.phones:
-            return f"{name}'s phones: {', '.join(p.value for p in record.phones)}"
-        return f"No phone numbers stored for {name}."
-        raise KeyError
+    if record.phones:
+        return f"{name}'s phones: {', '.join(p.value for p in record.phones)}"
+    return f"No phone numbers stored for {name}."
+        
 
 
 @input_error
@@ -196,23 +195,18 @@ def show_all(book: AddressBook):
 def add_birthday(args, book: AddressBook):
     name, birthday_date, *_ = args
     record = book.find(name)
-    if record:
-        record.add_birthday(birthday_date)
-        return "Birthday added."
-    else:
-        raise KeyError
+    record.add_birthday(birthday_date)
+    return "Birthday added."
 
 
 @input_error
 def show_birthday(args, book: AddressBook):
     name, *_ = args
     record = book.find(name)
-    if record:
-        if record.birthday:
-            return f"{name}'s birthday: {record.birthday}"
-        return f"No birthday set for {name}."
-    else:
-        raise KeyError
+    if record.birthday:
+        return f"{name}'s birthday: {record.birthday.value}"
+    return f"No birthday set for {name}."
+    
 
 
 @input_error
@@ -265,7 +259,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-# # --- TEST BLOCK FOR EXCEPTION HANDLING ---
+# --- TEST BLOCK FOR EXCEPTION HANDLING ---
 # if __name__ == "__main__":
 #     # Initialize AddressBook for testing
 #     test_book = AddressBook()
@@ -305,3 +299,4 @@ if __name__ == "__main__":
 #     print("Test 7 (KeyError): show-birthday for non-existent contact Charlie")
 #     print("Result:", show_birthday(["Charlie"], test_book))
 #     print("\n=== TESTS COMPLETED ===")
+
